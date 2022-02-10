@@ -38,7 +38,7 @@ weather_conditions_codes = {
 	313: ('rainy',),
 	314: ('rainy',),
 	321: ('rainy',),
-	500: ('rainy',),
+	500: ('light-rain',),
 	501: ('rainy',),
 	502: ('rainy',),
 	503: ('rainy',),
@@ -70,7 +70,7 @@ weather_conditions_codes = {
 	771: ('foggy',),
 	781: ('foggy',),
 	800: ('sunny',),
-	801: ('cloudy',),
+	801: ('partly-cloudy',),
 	802: ('cloudy',),
 	803: ('cloudy',),
 	804: ('cloudy',),
@@ -80,7 +80,9 @@ weather_conditions_icons = {
 	'day':           'DAY',
 	'blustery':      'WIND',
 	'rainy':         'RAIN',
+	'light-rain':         'LIGHT-RAIN',
 	'cloudy':        'CLOUDS',
+	'partly-cloudy': 'PARTLY',
 	'snowy':         'SNOW',
 	'stormy':        'STORM',
 	'foggy':         'FOG',
@@ -149,6 +151,7 @@ class WeatherSegment(KwThreadedSegment):
 		try:
 			condition = response['weather'][0]
 			condition_code = int(condition['id'])
+			day_night = 'day' if 'd' in condition['icon'] else 'night'
 			temp = float(response['main']['temp'])
 		except (KeyError, ValueError):
 			self.exception('OpenWeatherMap returned malformed or unexpected response: {0}', repr(raw_response))
@@ -160,16 +163,19 @@ class WeatherSegment(KwThreadedSegment):
 			icon_names = ('unknown',)
 			self.error('Unknown condition code: {0}', condition_code)
 
-		return (temp, icon_names)
+		return (temp, icon_names, day_night)
 
 	def render_one(self, weather, icons=None, unit='C', temp_format=None, temp_coldest=-30, temp_hottest=40, **kwargs):
 		if not weather:
 			return None
 
-		temp, icon_names = weather
+		temp, icon_names, day_night = weather
 
 		for icon_name in icon_names:
 			if icons:
+				if (icon_name+'_'+day_night) in icons:
+					icon = icons[icon_name+'_'+day_night]
+					break
 				if icon_name in icons:
 					icon = icons[icon_name]
 					break
